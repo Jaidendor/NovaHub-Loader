@@ -3,7 +3,12 @@ name: Changelog
 on:
   push:
     branches: [main]
-  workflow_dispatch: # "Run workflow" posts the latest update again (for testing)
+  workflow_dispatch: # "Run workflow" posts the latest update again, or a test post
+    inputs:
+      test:
+        description: "Test post instead (update / new-game), empty = latest update"
+        required: false
+        default: ""
 
 jobs:
   post:
@@ -15,4 +20,5 @@ jobs:
       - name: Post update to Discord
         env:
           DISCORD_CHANGELOG_WEBHOOK: ${{ secrets.DISCORD_CHANGELOG_WEBHOOK }}
+          TEST_POST: ${{ github.event.inputs.test }}
         run: python3 .github/changelog.py "${{ github.event.before }}" "${{ github.sha }}"

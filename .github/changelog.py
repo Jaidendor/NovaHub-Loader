@@ -57,7 +57,12 @@ def main():
         print("DISCORD_CHANGELOG_WEBHOOK secret isn't set yet, nothing posted")
         return
     before, after = sys.argv[1], sys.argv[2]
-    if not before or set(before) == {"0"}:  # manual run or a brand-new branch: the latest real update
+    test = os.environ.get("TEST_POST", "")
+    if test == "update":
+        messages = ["TEST: update ping\nGame: Noob Incremental\n- This is a test post for the update log ping\n- Nothing changed in the script"]
+    elif test == "new-game":
+        messages = ["New Supported Game (TEST)\nGame: Example Game\n- This is a test post for the new game ping\n- No new game was added yet"]
+    elif not before or set(before) == {"0"}:  # manual run or a brand-new branch: the latest real update
         messages = [m for m in commits_args(["-30", after]) if "[skip changelog]" not in m][-1:]
     else:
         messages = [m for m in commits_args([f"{before}..{after}"]) if "[skip changelog]" not in m]
