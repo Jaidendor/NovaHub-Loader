@@ -52,11 +52,10 @@ def main():
         print("DISCORD_CHANGELOG_WEBHOOK secret isn't set yet, nothing posted")
         return
     before, after = sys.argv[1], sys.argv[2]
-    if not before or set(before) == {"0"}:  # manual run or a brand-new branch: just the latest commit
-        messages = commits_args(["-1", after])
+    if not before or set(before) == {"0"}:  # manual run or a brand-new branch: the latest real update
+        messages = [m for m in commits_args(["-30", after]) if "[skip changelog]" not in m][-1:]
     else:
-        messages = commits_args([f"{before}..{after}"])
-    messages = [m for m in messages if "[skip changelog]" not in m]
+        messages = [m for m in commits_args([f"{before}..{after}"]) if "[skip changelog]" not in m]
     if not messages:
         print("nothing to post")
         return
