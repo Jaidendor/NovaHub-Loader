@@ -1,11 +1,12 @@
-"""Makes today's Nova Hub key.
+"""Makes today's Nova Hub keys: the normal key and the tester key.
 
-1. Picks a random key and publishes only its SHA-256 fingerprint in keyhash.txt
+1. Picks a random key per kind and publishes only its SHA-256 fingerprint
    (next to yesterday's, so yesterday's key keeps working until the next one).
-2. Waits until GitHub's raw file cache has the new fingerprint.
-3. Shows the key in #get-key by editing the bot's key message (or posting it).
+2. Waits until GitHub's raw file cache has the new fingerprints.
+3. Shows each key in its Discord channel by editing the bot's key message (or posting it).
 
-The key itself only ever goes to Discord. Needs the DISCORD_KEY_WEBHOOK secret.
+The keys themselves only ever go to Discord. A kind is skipped while its webhook
+secret isn't set: DISCORD_KEY_WEBHOOK (#get-key), DISCORD_TESTER_KEY_WEBHOOK (tester channel).
 """
 import hashlib
 import json
@@ -18,8 +19,13 @@ import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-HASHES = ROOT / "keyhash.txt"
-MESSAGE_ID = ROOT / ".github" / "key-message.txt"
+KINDS = [
+    # secret, fingerprint file, message id file, key prefix, embed title, who it's for
+    ("DISCORD_KEY_WEBHOOK", "keyhash.txt", ".github/key-message.txt", "NOVA",
+     "🔑 Today's Nova Hub Key", "Paste it into the key window when you run the script."),
+    ("DISCORD_TESTER_KEY_WEBHOOK", "testerkeyhash.txt", ".github/tester-key-message.txt", "TEST",
+     "🧪 Today's Tester Key", "This key loads the **tester version** of Nova Hub. Report what breaks in #tester-chat."),
+]
 ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # no 0/O or 1/I mix-ups
 COLOR = 0x8A2BE2
 ICON = "https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Assets/icon_v1.png"
@@ -47,20 +53,7 @@ def discord(method, url, payload=None):
         return json.load(r) if r.status != 204 else None
 
 
-def main():
-    webhook = os.environ.get("DISCORD_KEY_WEBHOOK")
-    if not webhook:
-        print("DISCORD_KEY_WEBHOOK secret isn't set yet, no key made")
-        return
-
-    key = "NOVA-" + "-".join("".join(secrets.choice(ALPHABET) for _ in range(4)) for _ in range(2))
-    new_hash = hashlib.sha256(key.encode()).hexdigest()
-    old = HASHES.read_text().split() if HASHES.exists() else []
-    HASHES.write_text("\n".join([new_hash] + old[:1]) + "\n")
-    commit([str(HASHES)], "Daily key [skip changelog]")
-
-    time.sleep(int(os.environ.get("CACHE_WAIT", "330")))  # raw.githubusercontent.com caches ~5 minutes
-
+def post_key(webhook, message_file, key, title, intro):
     now = int(time.time())
     next_key = (now // 86400 + 1) * 86400 + 7 * 60
     payload = {
@@ -68,10 +61,10 @@ def main():
         "avatar_url": ICON,
         "content": "",
         "embeds": [{
-            "title": "🔑 Today's Nova Hub Key",
+            "title": title,
             "description": (
                 f"```\n{key}\n```\n"
-                "Paste it into the key window when you run the script.\n"
+                f"{intro}\n"
                 f"Next key <t:{next_key}:R>. Yesterday's key keeps working until then.\n\n"
                 "**Don't share the key outside this server.**"
             ),
@@ -80,19 +73,42 @@ def main():
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
         }],
     }
-    message_id = MESSAGE_ID.read_text().strip() if MESSAGE_ID.exists() else ""
+    message_id = message_file.read_text().strip() if message_file.exists() else ""
     if message_id:
         try:  # edit the existing message so the channel stays one clean post
             discord("PATCH", f"{webhook}/messages/{message_id}", payload)
-            print("key message updated")
-            return
+            return False
         except urllib.error.HTTPError as e:
             if e.code != 404:
                 raise
     sent = discord("POST", f"{webhook}?wait=true", payload)
-    MESSAGE_ID.write_text(sent["id"] + "\n")
-    commit([str(MESSAGE_ID)], "Key message id [skip changelog]")
-    print("key message posted")
+    message_file.write_text(sent["id"] + "\n")
+    return True
+
+
+def main():
+    todo = []
+    for secret, hash_name, message_name, prefix, title, intro in KINDS:
+        webhook = os.environ.get(secret)
+        if not webhook:
+            print(f"{secret} isn't set, skipping that key")
+            continue
+        key = prefix + "-" + "-".join("".join(secrets.choice(ALPHABET) for _ in range(4)) for _ in range(2))
+        hashes = ROOT / hash_name
+        old = hashes.read_text().split() if hashes.exists() else []
+        hashes.write_text("\n".join([hashlib.sha256(key.encode()).hexdigest()] + old[:1]) + "\n")
+        todo.append((webhook, ROOT / message_name, key, title, intro, hashes))
+    if not todo:
+        return
+    commit([str(t[5]) for t in todo], "Daily keys [skip changelog]")
+
+    time.sleep(int(os.environ.get("CACHE_WAIT", "330")))  # raw.githubusercontent.com caches ~5 minutes
+
+    new_ids = [str(message_file) for webhook, message_file, key, title, intro, _ in todo
+               if post_key(webhook, message_file, key, title, intro)]
+    if new_ids:
+        commit(new_ids, "Key message ids [skip changelog]")
+    print(f"made {len(todo)} key(s)")
 
 
 if __name__ == "__main__":

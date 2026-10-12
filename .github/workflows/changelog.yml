@@ -5,7 +5,10 @@ on:
     branches: [main]
     paths-ignore: # the daily key commits aren't updates
       - keyhash.txt
+      - testerkeyhash.txt
       - .github/key-message.txt
+      - .github/tester-key-message.txt
+      - Beta/** # tester builds are announced to testers, not in #changelog
   workflow_dispatch: # "Run workflow" posts the latest update again, or a test post
     inputs:
       test:
