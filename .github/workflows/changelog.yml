@@ -3,6 +3,9 @@ name: Changelog
 on:
   push:
     branches: [main]
+    paths-ignore: # the daily key commits aren't updates
+      - keyhash.txt
+      - .github/key-message.txt
   workflow_dispatch: # "Run workflow" posts the latest update again, or a test post
     inputs:
       test:
