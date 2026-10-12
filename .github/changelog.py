@@ -42,7 +42,7 @@ def embed(message):
     if bullets:
         parts.append("Features:" if new_game else "Changes:")
         parts += [f"• {b}" for b in bullets]
-    parts.append(f"\n🔄 Re-run the loadstring to update:\n```lua\n{LOADSTRING}\n```")
+    parts.append(f"\n🔄 Re-run the script to update:\n```lua\n{LOADSTRING}\n```")
     return {
         "title": ("🎮 " if new_game else "📢 ") + title,
         "description": "\n".join(parts)[:4000],
