@@ -17,8 +17,8 @@ from datetime import datetime, timezone
 COLOR = 0x8A2BE2  # Nova Hub purple
 # Discord role IDs to ping (Developer Mode -> right-click the role -> Copy Role ID).
 # A new game pings only NEW_GAME_ROLE, every other update pings only UPDATE_ROLE.
-UPDATE_ROLE = ""    # "update log"
-NEW_GAME_ROLE = ""  # "new game"
+UPDATE_ROLE = "1559068776404619265"    # "update log"
+NEW_GAME_ROLE = "1559069009050083368"  # "new game"
 ICON = "https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Assets/icon_v1.png"
 LOADSTRING = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Loader.lua"))()'
 
