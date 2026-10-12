@@ -15,6 +15,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 COLOR = 0x8A2BE2  # Nova Hub purple
+ICON = "https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Assets/icon_v1.png"
 LOADSTRING = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Loader.lua"))()'
 
 
@@ -62,7 +63,7 @@ def main():
     embeds = [embed(m) for m in messages][-10:]  # Discord allows 10 embeds per message
     req = urllib.request.Request(
         os.environ["DISCORD_CHANGELOG_WEBHOOK"],
-        data=json.dumps({"username": "Nova Hub", "embeds": embeds}).encode(),
+        data=json.dumps({"username": "Nova Hub", "avatar_url": ICON, "embeds": embeds}).encode(),
         headers={"Content-Type": "application/json", "User-Agent": "NovaHubChangelog"},
     )
     urllib.request.urlopen(req, timeout=20)
