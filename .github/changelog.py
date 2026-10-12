@@ -15,6 +15,10 @@ import urllib.request
 from datetime import datetime, timezone
 
 COLOR = 0x8A2BE2  # Nova Hub purple
+# Discord role IDs to ping (Developer Mode -> right-click the role -> Copy Role ID).
+# A new game pings only NEW_GAME_ROLE, every other update pings only UPDATE_ROLE.
+UPDATE_ROLE = ""    # "update log"
+NEW_GAME_ROLE = ""  # "new game"
 ICON = "https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Assets/icon_v1.png"
 LOADSTRING = 'loadstring(game:HttpGet("https://raw.githubusercontent.com/Jaidendor/NovaHub-Loader/main/Loader.lua"))()'
 
@@ -61,9 +65,15 @@ def main():
         print("nothing to post")
         return
     embeds = [embed(m) for m in messages][-10:]  # Discord allows 10 embeds per message
+    new_game = any(m.lower().startswith("new supported game") for m in messages)
+    role = NEW_GAME_ROLE if new_game else UPDATE_ROLE
+    payload = {"username": "Nova Hub", "avatar_url": ICON, "embeds": embeds,
+               "allowed_mentions": {"roles": [role] if role else []}}
+    if role:
+        payload["content"] = f"<@&{role}>"
     req = urllib.request.Request(
         os.environ["DISCORD_CHANGELOG_WEBHOOK"],
-        data=json.dumps({"username": "Nova Hub", "avatar_url": ICON, "embeds": embeds}).encode(),
+        data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", "User-Agent": "NovaHubChangelog"},
     )
     urllib.request.urlopen(req, timeout=20)
